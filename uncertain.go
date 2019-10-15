@@ -6,6 +6,9 @@ import (
 	"strconv"
 )
 
+// Get the data nested in from when following path. You can access maps by providing the key,
+// arrays, slices and strings by the index and structs by the field name. Pointers and interfaces
+// are dereferenced except when they are the last item in the path.
 func Get(from interface{}, path ...interface{}) (interface{}, error) {
 	v, err := get(reflect.ValueOf(from), path)
 	if err != nil {
