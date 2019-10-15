@@ -1,8 +1,10 @@
-package uncertain
+package uncertain_test
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/noxer/uncertain"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,55 +15,55 @@ type testStruct struct {
 }
 
 func TestGet(t *testing.T) {
-	res, err := Get(func() {}, "segment")
+	res, err := uncertain.Get(func() {}, "segment")
 	require.Error(t, err)
 
-	res, err = Get(make(chan string), "segment")
+	res, err = uncertain.Get(make(chan string), "segment")
 	require.Error(t, err)
 
-	res, err = Get(nil)
+	res, err = uncertain.Get(nil)
 	require.NoError(t, err)
 	require.Nil(t, res, "Get(nil) == nil")
 
-	res, err = Get(nil, "segment")
+	res, err = uncertain.Get(nil, "segment")
 	require.Error(t, err)
 
-	res, err = Get(nil, 1)
+	res, err = uncertain.Get(nil, 1)
 	require.Error(t, err)
 
-	res, err = Get([]byte{1, 2, 3}, "wrong")
+	res, err = uncertain.Get([]byte{1, 2, 3}, "wrong")
 	require.Error(t, err)
 
-	res, err = Get([]int{1, 2, 3}, -1)
+	res, err = uncertain.Get([]int{1, 2, 3}, -1)
 	require.Error(t, err)
 
-	res, err = Get([]uint{1, 2, 3}, 5)
+	res, err = uncertain.Get([]uint{1, 2, 3}, 5)
 	require.Error(t, err)
 
-	res, err = Get([]uint(nil), 0)
+	res, err = uncertain.Get([]uint(nil), 0)
 	require.Error(t, err)
 
-	res, err = Get([]float32{1, 2, 3}, 1)
+	res, err = uncertain.Get([]float32{1, 2, 3}, 1)
 	require.NoError(t, err)
 	require.Exactly(t, float32(2), res, "Must be 2.0f")
 
-	res, err = Get("string", "segment")
+	res, err = uncertain.Get("string", "segment")
 	require.Error(t, err)
 
-	res, err = Get("string", float64(100))
+	res, err = uncertain.Get("string", float64(100))
 	require.Error(t, err)
 
-	res, err = Get("string", -1)
+	res, err = uncertain.Get("string", -1)
 	require.Error(t, err)
 
-	res, err = Get("string", 20)
+	res, err = uncertain.Get("string", 20)
 	require.Error(t, err)
 
-	res, err = Get("string")
+	res, err = uncertain.Get("string")
 	require.NoError(t, err)
 	require.Exactly(t, "string", res, "Must be 'string'")
 
-	res, err = Get("string", 2)
+	res, err = uncertain.Get("string", 2)
 	require.NoError(t, err)
 	require.Exactly(t, byte('r'), res, "Must be 'r'")
 
@@ -74,47 +76,47 @@ func TestGet(t *testing.T) {
 		},
 	}
 
-	res, err = Get(ts)
+	res, err = uncertain.Get(ts)
 	require.NoError(t, err)
 	require.Exactly(t, ts, res, "Must be the test struct")
 
-	res, err = Get(&ts)
+	res, err = uncertain.Get(&ts)
 	require.NoError(t, err)
 	require.Exactly(t, &ts, res, "Must be the test struct ptr")
 
-	res, err = Get(&ts, "Attr1")
+	res, err = uncertain.Get(&ts, "Attr1")
 	require.NoError(t, err)
 	require.Exactly(t, "hello world", res, "Must be 'hello world'")
 
-	res, err = Get(ts, "Attr2")
+	res, err = uncertain.Get(ts, "Attr2")
 	require.NoError(t, err)
 	require.Exactly(t, 42, res, "Must be 42")
 
-	res, err = Get(ts, "Attr3")
+	res, err = uncertain.Get(ts, "Attr3")
 	require.NoError(t, err)
 	require.Exactly(t, map[string]string{
 		"hello": "world",
 		"other": "key",
 	}, res, "Must be the map")
 
-	res, err = Get(ts, "attr2")
+	res, err = uncertain.Get(ts, "attr2")
 	require.Error(t, err)
 
-	res, err = Get(ts, "flarbl")
+	res, err = uncertain.Get(ts, "flarbl")
 	require.Error(t, err)
 
-	res, err = Get(ts, "flarbl", "hello")
+	res, err = uncertain.Get(ts, "flarbl", "hello")
 	require.Error(t, err)
 
-	res, err = Get(ts, "Attr3", "hello")
+	res, err = uncertain.Get(ts, "Attr3", "hello")
 	require.NoError(t, err)
 	require.Exactly(t, "world", res, "Must be 'world'")
 
-	res, err = Get(&ts, "Attr3", "hello")
+	res, err = uncertain.Get(&ts, "Attr3", "hello")
 	require.NoError(t, err)
 	require.Exactly(t, "world", res, "Must be 'world'")
 
-	res, err = Get(&ts, "Attr3", "other", 0)
+	res, err = uncertain.Get(&ts, "Attr3", "other", 0)
 	require.NoError(t, err)
 	require.Exactly(t, byte('k'), res, "Must be 'k'")
 
@@ -127,11 +129,19 @@ func TestGet(t *testing.T) {
 		},
 	}
 
-	res, err = Get(deep, keyStruct{}, "innerKey", 2)
+	res, err = uncertain.Get(deep, keyStruct{}, "innerKey", 2)
 	require.NoError(t, err)
 	require.Exactly(t, 3, res, "Must be 3")
 
-	res, err = Get(deep, "key", "1")
+	res, err = uncertain.Get(deep, "key", "1")
 	require.NoError(t, err)
 	require.Exactly(t, byte('a'), res, "Must be 'a'")
+}
+
+func ExampleGet() {
+	t := map[string]interface{}{
+		"outer": struct{ Inner string }{"value"},
+	}
+	val, err := uncertain.Get(t, "outer", "Inner")
+	fmt.Printf("t[\"outer\"].Inner == \"%s\", err == %s\n", val, err)
 }
