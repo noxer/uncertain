@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"unicode"
 )
 
 // Get the data nested in from when following path. You can access maps by providing the key,
@@ -58,6 +59,9 @@ func get(from reflect.Value, path []interface{}) (reflect.Value, error) {
 		field, ok := path[0].(string)
 		if !ok {
 			return reflect.Value{}, errors.New("invalid field name")
+		}
+		if len(field) > 0 && !unicode.IsUpper([]rune(field)[0]) {
+			return reflect.Value{}, errors.New("can't access private field")
 		}
 		from = from.FieldByName(field)
 		if !from.IsValid() {
