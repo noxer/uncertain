@@ -48,7 +48,10 @@ func get(from reflect.Value, path []interface{}) (reflect.Value, error) {
 	case reflect.Array, reflect.String:
 		// this is a slice, array, or string; use the path segment as an index
 		i, ok := anyToInt(path[0])
-		if !ok || i < 0 || i >= from.Len() {
+		if !ok {
+			return reflect.Value{}, errors.New("path segment can't be interpreted as a number")
+		}
+		if i < 0 || i >= from.Len() {
 			return reflect.Value{}, errors.New("index is out of bounds")
 		}
 		return get(from.Index(i), path[1:])
