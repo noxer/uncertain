@@ -98,6 +98,8 @@ func anyToInt(i interface{}) (int, bool) {
 		return int(t), true
 	case uint64:
 		return int(t), true
+	case uintptr:
+		return int(t), true
 	}
 
 	return 0, false
