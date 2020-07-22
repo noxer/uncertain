@@ -22,10 +22,12 @@ func Get(from interface{}, path ...interface{}) (interface{}, error) {
 }
 
 func get(from reflect.Value, path []interface{}) (reflect.Value, error) {
+	// no more path segments, this seems to be the value the user wants
 	if len(path) == 0 {
 		return from, nil
 	}
 
+	// dereference all (nested) pointers and interfaces
 	for from.Kind() == reflect.Ptr || from.Kind() == reflect.Interface {
 		if from.IsNil() {
 			return reflect.Value{}, errors.New("unable to dereference nil pointer")
@@ -33,15 +35,18 @@ func get(from reflect.Value, path []interface{}) (reflect.Value, error) {
 		from = from.Elem()
 	}
 
+	// now we try all the different (supported) kinds of values
 	switch from.Kind() {
 
 	case reflect.Slice:
+		// this is a slice, check if it's nil before proceeding
 		if from.IsNil() {
 			return reflect.Value{}, errors.New("unable to dereference nil slice")
 		}
 		fallthrough
 
 	case reflect.Array, reflect.String:
+		// this is a slice, array, or string; use the path segment as an index
 		i, ok := anyToInt(path[0])
 		if !ok || i < 0 || i >= from.Len() {
 			return reflect.Value{}, errors.New("index is out of bounds")
@@ -49,6 +54,7 @@ func get(from reflect.Value, path []interface{}) (reflect.Value, error) {
 		return get(from.Index(i), path[1:])
 
 	case reflect.Map:
+		// this is a map; use the path segment as the key
 		from = from.MapIndex(reflect.ValueOf(path[0]))
 		if !from.IsValid() {
 			return reflect.Value{}, errors.New("map key not found")
@@ -56,6 +62,7 @@ func get(from reflect.Value, path []interface{}) (reflect.Value, error) {
 		return get(from, path[1:])
 
 	case reflect.Struct:
+		// this is a struct; use the path segment as a field name
 		field, ok := path[0].(string)
 		if !ok {
 			return reflect.Value{}, errors.New("invalid field name")
