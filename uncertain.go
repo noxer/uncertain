@@ -9,13 +9,13 @@ import (
 
 // Get the data nested in from when following path. You can access maps by providing the key,
 // arrays, slices and strings by the index and structs by the field name. Pointers and interfaces
-// are dereferenced except when they are the last item in the path.
+// are always dereferenced.
 func Get(from interface{}, path ...interface{}) (interface{}, error) {
 	v, err := get(reflect.ValueOf(from), path)
 	if err != nil {
 		return nil, err
 	}
-	if !v.IsValid() {
+	if !v.CanInterface() {
 		return nil, nil
 	}
 	return v.Interface(), nil
@@ -118,6 +118,15 @@ func get(from reflect.Value, path []interface{}) (reflect.Value, error) {
 	}
 
 	return reflect.Value{}, errors.New("can't walk the rest of the path for" + from.String())
+}
+
+// MustGet does the same as Get but panics in case of an error.
+func MustGet(from interface{}, path ...interface{}) interface{} {
+	res, err := Get(from, path...)
+	if err != nil {
+		panic(err.Error())
+	}
+	return res
 }
 
 func anyToInt(i interface{}) (int, bool) {
