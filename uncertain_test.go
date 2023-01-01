@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/carlmjohnson/be"
 	"github.com/noxer/uncertain"
-	"github.com/stretchr/testify/require"
 )
 
 type testStruct struct {
@@ -17,62 +17,61 @@ type testStruct struct {
 
 func TestInvalid(t *testing.T) {
 	_, err := uncertain.Get(func() {}, "segment")
-	require.Error(t, err)
+	be.Nonzero(t, err)
 
 	_, err = uncertain.Get(make(chan string), "segment")
-	require.Error(t, err)
+	be.Nonzero(t, err)
 }
 
 func TestNil(t *testing.T) {
 	res, err := uncertain.Get(nil)
-	require.NoError(t, err)
-	require.Nil(t, res, "Get(nil) == nil")
+	be.NilErr(t, err)
+	be.Zero(t, res)
 
-	res, err = uncertain.Get(nil, "segment")
-	require.Error(t, err)
-
-	res, err = uncertain.Get(nil, 1)
-	require.Error(t, err)
+	_, err = uncertain.Get(nil, "segment")
+	be.Nonzero(t, err)
+	_, err = uncertain.Get(nil, 1)
+	be.Nonzero(t, err)
 }
 
 func TestSlices(t *testing.T) {
-	res, err := uncertain.Get([]byte{1, 2, 3}, "wrong")
-	require.Error(t, err)
+	_, err := uncertain.Get([]byte{1, 2, 3}, "wrong")
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get([]int{1, 2, 3}, -1)
-	require.Error(t, err)
+	_, err = uncertain.Get([]int{1, 2, 3}, -1)
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get([]uint{1, 2, 3}, 5)
-	require.Error(t, err)
+	_, err = uncertain.Get([]uint{1, 2, 3}, 5)
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get([]uint(nil), 0)
-	require.Error(t, err)
+	_, err = uncertain.Get([]uint(nil), 0)
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get([]float32{1, 2, 3}, 1)
-	require.NoError(t, err)
-	require.Exactly(t, float32(2), res, "Must be 2.0f")
+	res, err := uncertain.Get([]float32{1, 2, 3}, 1)
+	be.NilErr(t, err)
+	be.Equal(t, 2, res.(float32))
 }
 
 func TestStrings(t *testing.T) {
-	res, err := uncertain.Get("string", "segment")
-	require.Error(t, err)
+	_, err := uncertain.Get("string", "segment")
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get("string", float64(100))
-	require.Error(t, err)
+	_, err = uncertain.Get("string", float64(100))
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get("string", -1)
-	require.Error(t, err)
+	_, err = uncertain.Get("string", -1)
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get("string", 20)
-	require.Error(t, err)
+	_, err = uncertain.Get("string", 20)
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get("string")
-	require.NoError(t, err)
-	require.Exactly(t, "string", res, "Must be 'string'")
+	res, err := uncertain.Get("string")
+	be.NilErr(t, err)
+	be.Equal(t, "string", res.(string))
 
 	res, err = uncertain.Get("string", 2)
-	require.NoError(t, err)
-	require.Exactly(t, byte('r'), res, "Must be 'r'")
+	be.NilErr(t, err)
+	be.Equal(t, 'r', res.(byte))
 
 }
 
@@ -82,19 +81,19 @@ func TestMap(t *testing.T) {
 		"key2": nil,
 	}
 
-	res, err := uncertain.Get(map[string]string(nil), "key1")
-	require.Error(t, err)
+	_, err := uncertain.Get(map[string]string(nil), "key1")
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get(tm, "key1")
-	require.NoError(t, err)
-	require.Exactly(t, "val1", res, "Must be 'val1'")
+	res, err := uncertain.Get(tm, "key1")
+	be.NilErr(t, err)
+	be.Equal(t, "val1", res.(string))
 
 	res, err = uncertain.Get(tm, "key2")
-	require.NoError(t, err)
-	require.Exactly(t, nil, res, "Must be nil")
+	be.NilErr(t, err)
+	be.Zero(t, res)
 
-	res, err = uncertain.Get(tm, "key3")
-	require.Error(t, err)
+	_, err = uncertain.Get(tm, "key3")
+	be.Nonzero(t, err)
 }
 
 func TestStruct(t *testing.T) {
@@ -108,48 +107,48 @@ func TestStruct(t *testing.T) {
 	}
 
 	res, err := uncertain.Get(ts)
-	require.NoError(t, err)
-	require.Exactly(t, ts, res, "Must be the test struct")
+	be.NilErr(t, err)
+	be.DeepEqual(t, ts, res.(testStruct))
 
 	res, err = uncertain.Get(&ts)
-	require.NoError(t, err)
-	require.Exactly(t, ts, res, "Must be the dereferenced test struct")
+	be.NilErr(t, err)
+	be.DeepEqual(t, ts, res.(testStruct))
 
 	res, err = uncertain.Get(&ts, "Attr1")
-	require.NoError(t, err)
-	require.Exactly(t, "hello world", res, "Must be 'hello world'")
+	be.NilErr(t, err)
+	be.Equal(t, "hello world", res.(string))
 
 	res, err = uncertain.Get(ts, "Attr2")
-	require.NoError(t, err)
-	require.Exactly(t, 42, res, "Must be 42")
+	be.NilErr(t, err)
+	be.Equal(t, 42, res.(int))
 
 	res, err = uncertain.Get(ts, "Attr3")
-	require.NoError(t, err)
-	require.Exactly(t, map[string]string{
+	be.NilErr(t, err)
+	be.DeepEqual(t, map[string]string{
 		"hello": "world",
 		"other": "key",
-	}, res, "Must be the map")
+	}, res.(map[string]string))
 
-	res, err = uncertain.Get(ts, "attr2")
-	require.Error(t, err)
+	_, err = uncertain.Get(ts, "attr2")
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get(ts, "flarbl")
-	require.Error(t, err)
+	_, err = uncertain.Get(ts, "flarbl")
+	be.Nonzero(t, err)
 
-	res, err = uncertain.Get(ts, "flarbl", "hello")
-	require.Error(t, err)
+	_, err = uncertain.Get(ts, "flarbl", "hello")
+	be.Nonzero(t, err)
 
 	res, err = uncertain.Get(ts, "Attr3", "hello")
-	require.NoError(t, err)
-	require.Exactly(t, "world", res, "Must be 'world'")
+	be.NilErr(t, err)
+	be.Equal(t, "world", res.(string))
 
 	res, err = uncertain.Get(&ts, "Attr3", "hello")
-	require.NoError(t, err)
-	require.Exactly(t, "world", res, "Must be 'world'")
+	be.NilErr(t, err)
+	be.Equal(t, "world", res.(string))
 
 	res, err = uncertain.Get(&ts, "Attr3", "other", 0)
-	require.NoError(t, err)
-	require.Exactly(t, byte('k'), res, "Must be 'k'")
+	be.NilErr(t, err)
+	be.Equal(t, 'k', res.(byte))
 }
 
 func TestSliceIteration(t *testing.T) {
@@ -170,23 +169,23 @@ func TestSliceIteration(t *testing.T) {
 	}
 
 	res, err := uncertain.Get(ts, "Attr4", 0, "A")
-	require.NoError(t, err)
-	require.Exactly(t, "First A", res, "Must be 'First A'")
+	be.NilErr(t, err)
+	be.Equal(t, "First A", res.(string))
 
 	res, err = uncertain.Get(ts, "Attr4", "*", "B")
-	require.NoError(t, err)
-	require.Exactly(t, []string{"First B", "Second B", "Third B", ""}, res, "Must be '[]string{\"First B\", \"Second B\", \"Third B\", \"\"}'")
+	be.NilErr(t, err)
+	be.DeepEqual(t, []string{"First B", "Second B", "Third B", ""}, res.([]string))
 
 	res, err = uncertain.Get(ts, "Attr4", "*", "C")
-	require.NoError(t, err)
-	require.Exactly(t, []interface{}{123, "123", nil, map[string]interface{}{
+	be.NilErr(t, err)
+	be.DeepEqual(t, []interface{}{123, "123", nil, map[string]interface{}{
 		"key1": "value1",
 		"key2": []string{"one", "two", "three", "four"},
-	}}, res, "Must be '[]interface{}{123, \"123\", nil, map[string]interface{}{...}}'")
+	}}, res.([]any))
 
 	res, err = uncertain.Get(ts, "Attr4", "*", "C", "key1")
-	require.NoError(t, err)
-	require.Exactly(t, []string{"value1"}, res, "Must be '[]string{\"value1\"}'")
+	be.NilErr(t, err)
+	be.DeepEqual(t, []string{"value1"}, res.([]string))
 }
 
 func TestNested(t *testing.T) {
@@ -200,12 +199,12 @@ func TestNested(t *testing.T) {
 	}
 
 	res, err := uncertain.Get(deep, keyStruct{}, "innerKey", 2)
-	require.NoError(t, err)
-	require.Exactly(t, 3, res, "Must be 3")
+	be.NilErr(t, err)
+	be.Equal(t, 3, res.(int))
 
 	res, err = uncertain.Get(deep, "key", "1")
-	require.NoError(t, err)
-	require.Exactly(t, byte('a'), res, "Must be 'a'")
+	be.NilErr(t, err)
+	be.Equal(t, 'a', res.(byte))
 }
 
 func TestNilPtr(t *testing.T) {
@@ -215,7 +214,7 @@ func TestNilPtr(t *testing.T) {
 
 	nilPtr := nilPtrStruct{Ohno: nil}
 	_, err := uncertain.Get(nilPtr, "Ohno", 2)
-	require.Error(t, err)
+	be.Nonzero(t, err)
 }
 
 func ExampleGet() {
